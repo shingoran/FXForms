@@ -49,8 +49,8 @@ static const CGFloat FXFormFieldLabelSpacing = 5;
 static const CGFloat FXFormFieldMinLabelWidth = 97;
 static const CGFloat FXFormFieldMaxLabelWidth = 240;
 static const CGFloat FXFormFieldMinFontSize = 12;
-static const CGFloat FXFormFieldPaddingLeft = 10;
-static const CGFloat FXFormFieldPaddingRight = 10;
+static const CGFloat FXFormFieldPaddingLeft = 15;
+static const CGFloat FXFormFieldPaddingRight = 15;
 static const CGFloat FXFormFieldPaddingTop = 12;
 static const CGFloat FXFormFieldPaddingBottom = 12;
 
@@ -1528,9 +1528,10 @@ static BOOL *FXFormCanSetValueForKey(id<FXForm> form, NSString *key)
 {
     if ((self = [super initWithStyle:style reuseIdentifier:reuseIdentifier ?: NSStringFromClass([self class])]))
     {
-        self.textLabel.font = [UIFont boldSystemFontOfSize:17];
+        self.textLabel.font = [UIFont systemFontOfSize:17];
         FXFormLabelSetMinFontSize(self.textLabel, FXFormFieldMinFontSize);
         self.detailTextLabel.font = [UIFont systemFontOfSize:17];
+        self.detailTextLabel.textColor = [[UIApplication sharedApplication] keyWindow].tintColor;
         FXFormLabelSetMinFontSize(self.detailTextLabel, FXFormFieldMinFontSize);
         
         [self setUp];
@@ -1701,7 +1702,7 @@ static BOOL *FXFormCanSetValueForKey(id<FXForm> form, NSString *key)
     self.textField.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleBottomMargin |UIViewAutoresizingFlexibleLeftMargin;
     self.textField.font = [UIFont systemFontOfSize:self.textLabel.font.pointSize];
     self.textField.minimumFontSize = FXFormLabelMinFontSize(self.textLabel);
-    self.textField.textColor = [UIColor colorWithRed:0.275f green:0.376f blue:0.522f alpha:1.000f];
+    self.textField.textColor = [[UIApplication sharedApplication] keyWindow].tintColor;
     self.textField.delegate = self;
     [self.contentView addSubview:self.textField];
     
@@ -1758,7 +1759,7 @@ static BOOL *FXFormCanSetValueForKey(id<FXForm> form, NSString *key)
 		textFieldFrame.origin.x = FXFormFieldPaddingLeft;
 		textFieldFrame.size.width = self.contentView.bounds.size.width - FXFormFieldPaddingLeft - FXFormFieldPaddingRight;
 	}
-    else if (self.textField.textAlignment == NSTextAlignmentRight)
+    else if (self.textField.textAlignment == NSTextAlignmentLeft)
     {
 		textFieldFrame.origin.x = self.textLabel.frame.origin.x + labelFrame.size.width + FXFormFieldLabelSpacing;
 		textFieldFrame.size.width = self.textField.superview.frame.size.width - textFieldFrame.origin.x - FXFormFieldPaddingRight;
@@ -1773,7 +1774,7 @@ static BOOL *FXFormCanSetValueForKey(id<FXForm> form, NSString *key)
     self.textField.text = [self.field fieldDescription];
     
     self.textField.returnKeyType = UIReturnKeyDone;
-    self.textField.textAlignment = NSTextAlignmentRight;
+    self.textField.textAlignment = NSTextAlignmentLeft;
     self.textField.secureTextEntry = NO;
     
     if ([self.field.type isEqualToString:FXFormFieldTypeText])
@@ -1918,7 +1919,7 @@ static BOOL *FXFormCanSetValueForKey(id<FXForm> form, NSString *key)
     self.textView = [[UITextView alloc] initWithFrame:CGRectMake(0, 0, 320, 21)];
     self.textView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleBottomMargin | UIViewAutoresizingFlexibleRightMargin;
     self.textView.font = [UIFont systemFontOfSize:17];
-    self.textView.textColor = [UIColor colorWithRed:0.275f green:0.376f blue:0.522f alpha:1.000f];
+    self.textView.textColor = [[UIApplication sharedApplication] keyWindow].tintColor;
     self.textView.delegate = self;
     self.textView.scrollEnabled = NO;
     [self.contentView addSubview:self.textView];
