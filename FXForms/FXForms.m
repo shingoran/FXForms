@@ -368,6 +368,7 @@ static BOOL *FXFormCanSetValueForKey(id<FXForm> form, NSString *key)
 @property (nonatomic, copy) NSString *header;
 @property (nonatomic, copy) NSString *footer;
 @property (nonatomic, assign) BOOL isInline;
+@property (nonatomic, assign) BOOL isHidden;
 
 @property (nonatomic, weak) FXFormController *formController;
 @property (nonatomic, strong) NSMutableDictionary *cellConfig;
@@ -697,6 +698,11 @@ static BOOL *FXFormCanSetValueForKey(id<FXForm> form, NSString *key)
 - (void)setInline:(BOOL)isInline
 {
     _isInline = isInline;
+}
+
+- (void)setHidden:(BOOL)isHidden
+{
+    _isHidden = isHidden;
 }
 
 - (void)setOptions:(NSArray *)options
@@ -1270,6 +1276,9 @@ static BOOL *FXFormCanSetValueForKey(id<FXForm> form, NSString *key)
 {
     FXFormField *field = [self fieldForIndexPath:indexPath];
     Class cellClass = field.cell ?: [self cellClassForFieldType:field.type];
+    if (field.isHidden) {
+        return 0;
+    }
     if ([cellClass respondsToSelector:@selector(heightForField:width:)])
     {
         return [cellClass heightForField:field width:self.tableView.frame.size.width];
@@ -1533,6 +1542,7 @@ static BOOL *FXFormCanSetValueForKey(id<FXForm> form, NSString *key)
 {
     if ((self = [super initWithStyle:style reuseIdentifier:reuseIdentifier ?: NSStringFromClass([self class])]))
     {
+        self.clipsToBounds = YES;
         self.textLabel.font = [UIFont systemFontOfSize:17];
         FXFormLabelSetMinFontSize(self.textLabel, FXFormFieldMinFontSize);
         self.detailTextLabel.font = [UIFont systemFontOfSize:17];
@@ -1566,6 +1576,7 @@ static BOOL *FXFormCanSetValueForKey(id<FXForm> form, NSString *key)
 
 - (void)update
 {
+    self.hidden = self.field.isHidden;
     self.textLabel.text = self.field.title;
     self.detailTextLabel.text = [self.field fieldDescription] ?: [self.field.placeholder fieldDescription];
     if ([[UIDevice currentDevice].systemVersion floatValue] >= 7.0)
