@@ -49,6 +49,7 @@ static NSString *const FXFormFieldAction = @"action";
 static NSString *const FXFormFieldHeader = @"header";
 static NSString *const FXFormFieldFooter = @"footer";
 static NSString *const FXFormFieldInline = @"inline";
+static NSString *const FXFormFieldHidden = @"hidden";
 static NSString *const FXFormFieldViewController = @"viewController";
 
 static NSString *const FXFormFieldTypeDefault = @"default";
