@@ -1775,7 +1775,7 @@ static BOOL *FXFormCanSetValueForKey(id<FXForm> form, NSString *key)
 		textFieldFrame.origin.x = FXFormFieldPaddingLeft;
 		textFieldFrame.size.width = self.contentView.bounds.size.width - FXFormFieldPaddingLeft - FXFormFieldPaddingRight;
 	}
-    else if (self.textField.textAlignment == NSTextAlignmentLeft)
+    else if (self.textField.textAlignment == NSTextAlignmentRight)
     {
 		textFieldFrame.origin.x = self.textLabel.frame.origin.x + labelFrame.size.width + FXFormFieldLabelSpacing;
 		textFieldFrame.size.width = self.textField.superview.frame.size.width - textFieldFrame.origin.x - FXFormFieldPaddingRight;
@@ -1790,7 +1790,7 @@ static BOOL *FXFormCanSetValueForKey(id<FXForm> form, NSString *key)
     self.textField.text = [self.field fieldDescription];
     
     self.textField.returnKeyType = UIReturnKeyDone;
-    self.textField.textAlignment = NSTextAlignmentLeft;
+    self.textField.textAlignment = NSTextAlignmentRight;
     self.textField.secureTextEntry = NO;
     
     if ([self.field.type isEqualToString:FXFormFieldTypeText])
