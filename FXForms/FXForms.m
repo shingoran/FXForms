@@ -1,7 +1,7 @@
 //
 //  FXForms.m
 //
-//  Version 1.1.1
+//  Version 1.1.2
 //
 //  Created by Nick Lockwood on 13/02/2014.
 //  Copyright (c) 2014 Charcoal Design. All rights reserved.
@@ -493,7 +493,7 @@ static BOOL *FXFormCanSetValueForKey(id<FXForm> form, NSString *key)
 - (BOOL)isIndexedType
 {
     //return YES if value should be set as index of option, not value of option
-    if ([self.valueClass isSubclassOfClass:[NSNumber class]])
+    if ([self.valueClass isSubclassOfClass:[NSNumber class]] && ![self.type isEqualToString:FXFormFieldTypeBitfield])
     {
         return ![[self.options firstObject] isKindOfClass:[NSNumber class]];
     }
@@ -634,7 +634,8 @@ static BOOL *FXFormCanSetValueForKey(id<FXForm> form, NSString *key)
     if (FXFormCanGetValueForKey(self.form, self.key))
     {
         id value = [(NSObject *)self.form valueForKey:self.key];
-        if (!value && ([self.valueClass conformsToProtocol:@protocol(FXForm)] ||
+        if (!value && (([self.valueClass conformsToProtocol:@protocol(FXForm)] &&
+                        ![self.valueClass isSubclassOfClass:NSClassFromString(@"NSManagedObject")]) ||
                        [self.valueClass isSubclassOfClass:[UIViewController class]]))
         {
             value = [[self.valueClass alloc] init];
@@ -1365,7 +1366,7 @@ static BOOL *FXFormCanSetValueForKey(id<FXForm> form, NSString *key)
     //forward to delegate
     if ([self.delegate respondsToSelector:_cmd])
     {
-        [self.delegate scrollViewDidScroll:scrollView];
+        [self.delegate scrollViewWillBeginDragging:scrollView];
     }
 }
 
@@ -1549,6 +1550,15 @@ static BOOL *FXFormCanSetValueForKey(id<FXForm> form, NSString *key)
         self.detailTextLabel.textColor = [[UIApplication sharedApplication] keyWindow].tintColor;
         FXFormLabelSetMinFontSize(self.detailTextLabel, FXFormFieldMinFontSize);
         
+        if ([[UIDevice currentDevice].systemVersion floatValue] >= 7.0)
+        {
+            self.selectionStyle = UITableViewCellSelectionStyleDefault;
+        }
+        else
+        {
+            self.selectionStyle = UITableViewCellSelectionStyleBlue;
+        }
+        
         [self setUp];
     }
     return self;
@@ -1576,38 +1586,35 @@ static BOOL *FXFormCanSetValueForKey(id<FXForm> form, NSString *key)
 
 - (void)update
 {
-    self.hidden = self.field.isHidden;
-    self.textLabel.text = self.field.title;
-    self.detailTextLabel.text = [self.field fieldDescription] ?: [self.field.placeholder fieldDescription];
-    if ([[UIDevice currentDevice].systemVersion floatValue] >= 7.0)
-    {
-        self.selectionStyle = UITableViewCellSelectionStyleDefault;
-    }
-    else
-    {
-        self.selectionStyle = UITableViewCellSelectionStyleBlue;
-    }
+    //override
     
-    if ([self.field.valueClass conformsToProtocol:@protocol(FXForm)] ||
-        [self.field.valueClass isSubclassOfClass:[UIViewController class]] ||
-        [self.field.options count] || self.field.viewController)
+    if ([self class] == [FXFormBaseCell class])
     {
-        self.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
-    }
-    else if ([self.field.type isEqualToString:FXFormFieldTypeBoolean] || [self.field.type isEqualToString:FXFormFieldTypeOption])
-    {
-        self.detailTextLabel.text = nil;
-        self.accessoryType = [self.field.value boolValue]? UITableViewCellAccessoryCheckmark: UITableViewCellAccessoryNone;
-    }
-    else if (self.field.action)
-    {
-        self.accessoryType = UITableViewCellAccessoryNone;
-        self.textLabel.textAlignment = UITextAlignmentCenter;
-    }
-    else
-    {
-        self.accessoryType = UITableViewCellAccessoryNone;
-        self.selectionStyle = UITableViewCellSelectionStyleNone;
+        self.hidden = self.field.isHidden;
+        self.textLabel.text = self.field.title;
+        self.detailTextLabel.text = [self.field fieldDescription] ?: [self.field.placeholder fieldDescription];
+        
+        if ([self.field.valueClass conformsToProtocol:@protocol(FXForm)] ||
+            [self.field.valueClass isSubclassOfClass:[UIViewController class]] ||
+            [self.field.options count] || self.field.viewController)
+        {
+            self.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
+        }
+        else if ([self.field.type isEqualToString:FXFormFieldTypeBoolean] || [self.field.type isEqualToString:FXFormFieldTypeOption])
+        {
+            self.detailTextLabel.text = nil;
+            self.accessoryType = [self.field.value boolValue]? UITableViewCellAccessoryCheckmark: UITableViewCellAccessoryNone;
+        }
+        else if (self.field.action)
+        {
+            self.accessoryType = UITableViewCellAccessoryNone;
+            self.textLabel.textAlignment = UITextAlignmentCenter;
+        }
+        else
+        {
+            self.accessoryType = UITableViewCellAccessoryNone;
+            self.selectionStyle = UITableViewCellSelectionStyleNone;
+        }
     }
 }
 
@@ -2022,6 +2029,8 @@ static BOOL *FXFormCanSetValueForKey(id<FXForm> form, NSString *key)
         self.textView.autocapitalizationType = UITextAutocapitalizationTypeNone;
         self.textView.keyboardType = UIKeyboardTypeURL;
     }
+    
+    [self setNeedsLayout];
 }
 
 - (void)textViewDidBeginEditing:(__unused UITextView *)textView
@@ -2104,6 +2113,7 @@ static BOOL *FXFormCanSetValueForKey(id<FXForm> form, NSString *key)
 {
     self.textLabel.text = self.field.title;
     self.switchControl.on = [self.field.value boolValue];
+    [self setNeedsLayout];
 }
 
 - (UISwitch *)switchControl
@@ -2198,6 +2208,7 @@ static BOOL *FXFormCanSetValueForKey(id<FXForm> form, NSString *key)
 {
     self.textLabel.text = self.field.title;
     self.slider.value = [self.field.value doubleValue];
+    [self setNeedsLayout];
 }
 
 - (void)valueChanged
@@ -2296,7 +2307,7 @@ static BOOL *FXFormCanSetValueForKey(id<FXForm> form, NSString *key)
     imageView.contentMode = UIViewContentModeScaleAspectFill;
     imageView.clipsToBounds = YES;
     self.accessoryView = imageView;
-    [self layoutSubviews];
+    [self setNeedsLayout];
 }
 
 - (void)layoutSubviews
@@ -2312,9 +2323,9 @@ static BOOL *FXFormCanSetValueForKey(id<FXForm> form, NSString *key)
 
 - (void)update
 {
-    [super update];
-    
+    self.textLabel.text = self.field.title;
     self.imagePickerView.image = [self imageValue];
+    [self setNeedsLayout];
 }
 
 - (UIImage *)imageValue
