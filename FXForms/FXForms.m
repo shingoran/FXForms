@@ -1,7 +1,7 @@
 //
 //  FXForms.m
 //
-//  Version 1.1.2
+//  Version 1.1.3
 //
 //  Created by Nick Lockwood on 13/02/2014.
 //  Copyright (c) 2014 Charcoal Design. All rights reserved.
@@ -414,12 +414,12 @@ static BOOL *FXFormCanSetValueForKey(id<FXForm> form, NSString *key)
             dictionary = [NSMutableDictionary dictionary];
             NSString *key = dictionaryOrKey[FXFormFieldKey];
             [dictionary addEntriesFromDictionary:fieldDictionariesByKey[key]];
+            [dictionary addEntriesFromDictionary:dictionaryOrKey];
             NSString *selector = [key stringByAppendingString:@"Field"];
             if ([form respondsToSelector:NSSelectorFromString(selector)])
             {
                 [dictionary addEntriesFromDictionary:[(NSObject *)form valueForKey:selector]];
             }
-            [dictionary addEntriesFromDictionary:dictionaryOrKey];
             if ([dictionary[FXFormFieldClass] isKindOfClass:[NSString class]])
             {
                 dictionary[FXFormFieldClass] = NSClassFromString(dictionary[FXFormFieldClass]);
@@ -507,6 +507,14 @@ static BOOL *FXFormCanSetValueForKey(id<FXForm> form, NSString *key)
         if ([self.valueClass isSubclassOfClass:valueClass]) return YES;
     }
     return NO;
+}
+
+- (BOOL)isSubform
+{
+    return (![self.type isEqualToString:FXFormFieldTypeLabel] &&
+            ([self.valueClass conformsToProtocol:@protocol(FXForm)] ||
+             [self.valueClass isSubclassOfClass:[UIViewController class]] ||
+             [self.options count] || self.viewController));
 }
 
 - (NSString *)valueDescription:(id)value
@@ -1385,7 +1393,7 @@ static BOOL *FXFormCanSetValueForKey(id<FXForm> form, NSString *key)
 - (void)keyboardWillShow:(NSNotification *)note
 {
     UITableViewCell *cell = [self cellContainingView:FXFormsFirstResponder(self.tableView)];
-    if (cell)
+    if (cell && ![self.delegate isKindOfClass:[UITableViewController class]])
     {
         NSDictionary *keyboardInfo = [note userInfo];
         CGRect keyboardFrame = [keyboardInfo[UIKeyboardFrameEndUserInfoKey] CGRectValue];
@@ -1413,7 +1421,7 @@ static BOOL *FXFormCanSetValueForKey(id<FXForm> form, NSString *key)
 - (void)keyboardWillHide:(NSNotification *)note
 {
     UITableViewCell *cell = [self cellContainingView:FXFormsFirstResponder(self.tableView)];
-    if (cell)
+    if (cell && ![self.delegate isKindOfClass:[UITableViewController class]])
     {
         NSDictionary *keyboardInfo = [note userInfo];
         
@@ -1564,6 +1572,15 @@ static BOOL *FXFormCanSetValueForKey(id<FXForm> form, NSString *key)
     return self;
 }
 
+- (id)initWithCoder:(NSCoder *)aDecoder
+{
+    if ((self = [super initWithCoder:aDecoder]))
+    {
+        [self setUp];
+    }
+    return self;
+}
+
 - (void)setValue:(id)value forKeyPath:(NSString *)keyPath
 {
     if (![keyPath isEqualToString:@"style"])
@@ -1594,9 +1611,15 @@ static BOOL *FXFormCanSetValueForKey(id<FXForm> form, NSString *key)
         self.textLabel.text = self.field.title;
         self.detailTextLabel.text = [self.field fieldDescription] ?: [self.field.placeholder fieldDescription];
         
-        if ([self.field.valueClass conformsToProtocol:@protocol(FXForm)] ||
-            [self.field.valueClass isSubclassOfClass:[UIViewController class]] ||
-            [self.field.options count] || self.field.viewController)
+        if ([self.field.type isEqualToString:FXFormFieldTypeLabel])
+        {
+            self.accessoryType = UITableViewCellAccessoryNone;
+            if (!self.field.action)
+            {
+                self.selectionStyle = UITableViewCellSelectionStyleNone;
+            }
+        }
+        else if ([self.field isSubform])
         {
             self.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
         }
@@ -1686,18 +1709,19 @@ static BOOL *FXFormCanSetValueForKey(id<FXForm> form, NSString *key)
             [tableView selectRowAtIndexPath:nil animated:YES scrollPosition:UITableViewScrollPositionNone];
         }
     }
-    else if (self.field.viewController || [self.field.options count] || [self.field.valueClass conformsToProtocol:@protocol(FXForm)])
+    else if ([self.field isSubform])
     {
         [FXFormsFirstResponder(tableView) resignFirstResponder];
-        UIViewController <FXFormFieldViewController> *subcontroller = [[self.field.viewController ?: [FXFormViewController class] alloc] init];
-        subcontroller.field = self.field;
-        if (!subcontroller.title) subcontroller.title = self.field.title;
-        [controller.navigationController pushViewController:subcontroller animated:YES];
-    }
-    else if ([self.field.valueClass isSubclassOfClass:[UIViewController class]])
-    {
-        [FXFormsFirstResponder(tableView) resignFirstResponder];
-        UIViewController *subcontroller = self.field.value;
+        UIViewController *subcontroller = nil;
+        if ([self.field.valueClass isSubclassOfClass:[UIViewController class]])
+        {
+            subcontroller = self.field.value;
+        }
+        else
+        {
+            subcontroller = [[self.field.viewController ?: [FXFormViewController class] alloc] init];
+            ((id <FXFormFieldViewController>)subcontroller).field = self.field;
+        }
         if (!subcontroller.title) subcontroller.title = self.field.title;
         [controller.navigationController pushViewController:subcontroller animated:YES];
     }
