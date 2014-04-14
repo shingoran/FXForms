@@ -2446,7 +2446,7 @@ static BOOL *FXFormCanSetValueForKey(id<FXForm> form, NSString *key)
 
 - (void)dealloc
 {
-    self.pickerView.dataSournce = nil;
+    self.pickerView.dataSource = nil;
     self.pickerView.delegate = nil;
 }
 
