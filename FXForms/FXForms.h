@@ -1,7 +1,7 @@
 //
 //  FXForms.h
 //
-//  Version 1.1.3
+//  Version 1.1.6
 //
 //  Created by Nick Lockwood on 13/02/2014.
 //  Copyright (c) 2014 Charcoal Design. All rights reserved.
@@ -62,6 +62,7 @@ static NSString *const FXFormFieldTypePhone = @"phone";
 static NSString *const FXFormFieldTypePassword = @"password";
 static NSString *const FXFormFieldTypeNumber = @"number";
 static NSString *const FXFormFieldTypeInteger = @"integer";
+static NSString *const FXFormFieldTypeFloat = @"float";
 static NSString *const FXFormFieldTypeBitfield = @"bitfield";
 static NSString *const FXFormFieldTypeBoolean = @"boolean";
 static NSString *const FXFormFieldTypeOption = @"option";

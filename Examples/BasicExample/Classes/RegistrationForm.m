@@ -61,7 +61,7 @@
              //so we've used the FXFormFieldValueTransformer option to supply a value transformer
              
              @{FXFormFieldKey: @"country",
-               FXFormFieldOptions: @[@"us", @"ca", @"uk", @"sa", @"be"],
+               FXFormFieldOptions: @[@"us", @"ca", @"gb", @"sa", @"be"],
                FXFormFieldPlaceholder: @"None",
                FXFormFieldValueTransformer: [[ISO3166CountryValueTransformer alloc] init]},
              
