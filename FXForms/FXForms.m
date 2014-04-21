@@ -2471,10 +2471,6 @@ static BOOL *FXFormSetValueForKey(id<FXForm> form, id value, NSString *key)
     return _imagePickerController;
 }
 
-- (void)dealloc {
-    _imagePickerController.delegate = nil;
-}
-
 - (UIImageView *)imagePickerView
 {
     return (UIImageView *)self.accessoryView;
