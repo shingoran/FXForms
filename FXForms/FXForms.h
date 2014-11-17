@@ -53,6 +53,7 @@ UIKIT_EXTERN NSString *const FXFormFieldSegue; //segue
 UIKIT_EXTERN NSString *const FXFormFieldHeader; //header
 UIKIT_EXTERN NSString *const FXFormFieldFooter; //footer
 UIKIT_EXTERN NSString *const FXFormFieldInline; //inline
+UIKIT_EXTERN NSString *const FXFormFieldHidden; //hidden
 UIKIT_EXTERN NSString *const FXFormFieldSortable; //sortable
 UIKIT_EXTERN NSString *const FXFormFieldViewController; //viewController
 

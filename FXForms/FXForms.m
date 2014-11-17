@@ -57,6 +57,7 @@ NSString *const FXFormFieldSegue = @"segue";
 NSString *const FXFormFieldHeader = @"header";
 NSString *const FXFormFieldFooter = @"footer";
 NSString *const FXFormFieldInline = @"inline";
+NSString *const FXFormFieldHidden = @"hidden";
 NSString *const FXFormFieldSortable = @"sortable";
 NSString *const FXFormFieldViewController = @"viewController";
 
@@ -629,6 +630,7 @@ static void FXFormPreprocessFieldDictionary(NSMutableDictionary *dictionary)
 @property (nonatomic, readwrite) NSDictionary *fieldTemplate;
 @property (nonatomic, readwrite) BOOL isSortable;
 @property (nonatomic, readwrite) BOOL isInline;
+@property (nonatomic, readwrite) BOOL isHidden;
 @property (nonatomic, readonly) id (^valueTransformer)(id input);
 @property (nonatomic, readonly) id (^reverseValueTransformer)(id input);
 @property (nonatomic, strong) id defaultValue;
@@ -1091,6 +1093,11 @@ static void FXFormPreprocessFieldDictionary(NSMutableDictionary *dictionary)
 - (void)setInline:(BOOL)isInline
 {
     _isInline = isInline;
+}
+
+- (void)setHidden:(BOOL)isHidden
+{
+    _isHidden = isHidden;
 }
 
 - (void)setOptions:(NSArray *)options
@@ -2110,6 +2117,9 @@ static void FXFormPreprocessFieldDictionary(NSMutableDictionary *dictionary)
 {
     FXFormField *field = [self fieldForIndexPath:indexPath];
     Class cellClass = field.cellClass ?: [self cellClassForField:field];
+    if (field.isHidden) {
+        return 0;
+    }
     if ([cellClass respondsToSelector:@selector(heightForField:width:)])
     {
         return [cellClass heightForField:field width:self.tableView.frame.size.width];
@@ -2499,6 +2509,7 @@ static void FXFormPreprocessFieldDictionary(NSMutableDictionary *dictionary)
 {
     if ((self = [super initWithStyle:style reuseIdentifier:reuseIdentifier]))
     {
+        self.clipsToBounds = YES;
         self.textLabel.font = [UIFont systemFontOfSize:17];
         FXFormLabelSetMinFontSize(self.textLabel, FXFormFieldMinFontSize);
         self.detailTextLabel.font = [UIFont systemFontOfSize:17];
@@ -2632,6 +2643,7 @@ static void FXFormPreprocessFieldDictionary(NSMutableDictionary *dictionary)
 
 - (void)update
 {
+    self.hidden = self.field.isHidden;
     self.textLabel.text = self.field.title;
     self.detailTextLabel.text = [self.field fieldDescription];
     
@@ -2845,6 +2857,7 @@ static void FXFormPreprocessFieldDictionary(NSMutableDictionary *dictionary)
 
 - (void)update
 {
+    self.hidden = self.field.isHidden;
     self.textLabel.text = self.field.title;
     self.textField.placeholder = [self.field.placeholder fieldDescription];
     self.textField.text = [self.field fieldDescription];
@@ -3054,6 +3067,7 @@ static void FXFormPreprocessFieldDictionary(NSMutableDictionary *dictionary)
 
 - (void)update
 {
+    self.hidden = self.field.isHidden;
     self.textLabel.text = self.field.title;
     self.textView.text = [self.field fieldDescription];
     self.detailTextLabel.text = self.field.placeholder;
@@ -3171,6 +3185,7 @@ static void FXFormPreprocessFieldDictionary(NSMutableDictionary *dictionary)
 
 - (void)update
 {
+    self.hidden = self.field.isHidden;
     self.textLabel.text = self.field.title;
     self.switchControl.on = [self.field.value boolValue];
 }
@@ -3210,6 +3225,7 @@ static void FXFormPreprocessFieldDictionary(NSMutableDictionary *dictionary)
 
 - (void)update
 {
+    self.hidden = self.field.isHidden;
     self.textLabel.text = self.field.title;
     self.detailTextLabel.text = [self.field fieldDescription];
     self.stepper.value = [self.field.value doubleValue];
@@ -3263,6 +3279,7 @@ static void FXFormPreprocessFieldDictionary(NSMutableDictionary *dictionary)
 
 - (void)update
 {
+    self.hidden = self.field.isHidden;
     self.textLabel.text = self.field.title;
     self.slider.value = [self.field.value doubleValue];
 }
@@ -3294,6 +3311,7 @@ static void FXFormPreprocessFieldDictionary(NSMutableDictionary *dictionary)
 
 - (void)update
 {
+    self.hidden = self.field.isHidden;
     self.textLabel.text = self.field.title;
     self.detailTextLabel.text = [self.field fieldDescription] ?: [self.field.placeholder fieldDescription];
     
@@ -3387,6 +3405,7 @@ static void FXFormPreprocessFieldDictionary(NSMutableDictionary *dictionary)
 
 - (void)update
 {
+    self.hidden = self.field.isHidden;
     self.textLabel.text = self.field.title;
     self.imagePickerView.image = [self imageValue];
     [self setNeedsLayout];
@@ -3528,6 +3547,7 @@ static void FXFormPreprocessFieldDictionary(NSMutableDictionary *dictionary)
 
 - (void)update
 {
+    self.hidden = self.field.isHidden;
     self.textLabel.text = self.field.title;
     self.detailTextLabel.text = [self.field fieldDescription];
     
@@ -3624,6 +3644,7 @@ static void FXFormPreprocessFieldDictionary(NSMutableDictionary *dictionary)
 
 - (void)update
 {
+    self.hidden = self.field.isHidden;
     self.textLabel.text = self.field.title;
     
     [self.segmentedControl removeAllSegments];
