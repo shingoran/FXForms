@@ -88,8 +88,8 @@ static const CGFloat FXFormFieldLabelSpacing = 5;
 static const CGFloat FXFormFieldMinLabelWidth = 97;
 static const CGFloat FXFormFieldMaxLabelWidth = 240;
 static const CGFloat FXFormFieldMinFontSize = 12;
-static const CGFloat FXFormFieldPaddingLeft = 10;
-static const CGFloat FXFormFieldPaddingRight = 10;
+static const CGFloat FXFormFieldPaddingLeft = 15;
+static const CGFloat FXFormFieldPaddingRight = 15;
 static const CGFloat FXFormFieldPaddingTop = 12;
 static const CGFloat FXFormFieldPaddingBottom = 12;
 
@@ -2499,9 +2499,10 @@ static void FXFormPreprocessFieldDictionary(NSMutableDictionary *dictionary)
 {
     if ((self = [super initWithStyle:style reuseIdentifier:reuseIdentifier]))
     {
-        self.textLabel.font = [UIFont boldSystemFontOfSize:17];
+        self.textLabel.font = [UIFont systemFontOfSize:17];
         FXFormLabelSetMinFontSize(self.textLabel, FXFormFieldMinFontSize);
         self.detailTextLabel.font = [UIFont systemFontOfSize:17];
+        self.detailTextLabel.textColor = [[[UIApplication sharedApplication] keyWindow] tintColor];
         FXFormLabelSetMinFontSize(self.detailTextLabel, FXFormFieldMinFontSize);
         
         if ([[UIDevice currentDevice].systemVersion floatValue] >= 7.0)
@@ -2769,7 +2770,7 @@ static void FXFormPreprocessFieldDictionary(NSMutableDictionary *dictionary)
     self.textField.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleBottomMargin |UIViewAutoresizingFlexibleLeftMargin;
     self.textField.font = [UIFont systemFontOfSize:self.textLabel.font.pointSize];
     self.textField.minimumFontSize = FXFormLabelMinFontSize(self.textLabel);
-    self.textField.textColor = [UIColor colorWithRed:0.275f green:0.376f blue:0.522f alpha:1.000f];
+    self.textField.textColor = [[[UIApplication sharedApplication] keyWindow] tintColor];
     self.textField.delegate = self;
     [self.contentView addSubview:self.textField];
     
@@ -3004,7 +3005,7 @@ static void FXFormPreprocessFieldDictionary(NSMutableDictionary *dictionary)
     self.textView = [[UITextView alloc] initWithFrame:CGRectMake(0, 0, 320, 21)];
     self.textView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleBottomMargin | UIViewAutoresizingFlexibleRightMargin;
     self.textView.font = [UIFont systemFontOfSize:17];
-    self.textView.textColor = [UIColor colorWithRed:0.275f green:0.376f blue:0.522f alpha:1.000f];
+    self.textView.textColor = [[[UIApplication sharedApplication] keyWindow] tintColor];
     self.textView.backgroundColor = [UIColor clearColor];
     self.textView.delegate = self;
     self.textView.scrollEnabled = NO;
