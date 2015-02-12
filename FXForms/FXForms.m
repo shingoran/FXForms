@@ -2167,6 +2167,15 @@ static void FXFormPreprocessFieldDictionary(NSMutableDictionary *dictionary)
         [section removeFieldAtIndex:indexPath.row];
         [tableView deleteRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationAutomatic];
         
+        // Reload the rows that follow. This is necessary to update the field references on the cells (otherwise the keys
+        // are invalid which can lead to a crash).
+        NSMutableArray *indexPaths = [NSMutableArray new];
+        for (NSInteger i = indexPath.row; i < [section.fields count]; ++i)
+        {
+            [indexPaths addObject:[NSIndexPath indexPathForRow:i + 1 inSection:indexPath.section]];
+        }
+        [tableView reloadRowsAtIndexPaths:indexPaths withRowAnimation:UITableViewRowAnimationAutomatic];
+        
         [tableView endUpdates];
     }
 }
@@ -2175,6 +2184,10 @@ static void FXFormPreprocessFieldDictionary(NSMutableDictionary *dictionary)
 {
     FXFormSection *section = [self sectionAtIndex:sourceIndexPath.section];
     [section moveFieldAtIndex:sourceIndexPath.row toIndex:destinationIndexPath.row];
+    
+    // Reload the table. This is necessary to update the field references on the cells (otherwise the keys
+    // are invalid which can lead to a crash).
+    [tableView reloadData];
 }
 
 - (NSIndexPath *)tableView:(__unused UITableView *)tableView targetIndexPathForMoveFromRowAtIndexPath:(NSIndexPath *)sourceIndexPath toProposedIndexPath:(NSIndexPath *)proposedDestinationIndexPath
