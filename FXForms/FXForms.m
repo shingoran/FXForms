@@ -1,7 +1,7 @@
 //
 //  FXForms.m
 //
-//  Version 1.2.9
+//  Version 1.2.12
 //
 //  Created by Nick Lockwood on 13/02/2014.
 //  Copyright (c) 2014 Charcoal Design. All rights reserved.
@@ -506,7 +506,29 @@ static void FXFormPreprocessFieldDictionary(NSMutableDictionary *dictionary)
     {
         dictionary[FXFormFieldClass] = valueClass;
     }
-    
+  
+    //get default value
+    id defaultValue = dictionary[FXFormFieldDefaultValue];
+    if (defaultValue)
+    {
+        if ([valueClass isSubclassOfClass:[NSArray class]] && ![defaultValue isKindOfClass:[NSArray class]])
+        {
+          //workaround for common mistake where type is collection, but default value is a single value
+          defaultValue = [valueClass arrayWithObject:defaultValue];
+        }
+        else if ([valueClass isSubclassOfClass:[NSSet class]] && ![defaultValue isKindOfClass:[NSSet class]])
+        {
+          //as above, but for NSSet
+          defaultValue = [valueClass setWithObject:defaultValue];
+        }
+        else if ([valueClass isSubclassOfClass:[NSOrderedSet class]] && ![defaultValue isKindOfClass:[NSOrderedSet class]])
+        {
+          //as above, but for NSOrderedSet
+          defaultValue = [valueClass orderedSetWithObject:defaultValue];
+        }
+        dictionary[FXFormFieldDefaultValue] = defaultValue;
+    }
+  
     //get field type
     NSString *key = dictionary[FXFormFieldKey];
     if (!type)
@@ -582,12 +604,12 @@ static void FXFormPreprocessFieldDictionary(NSMutableDictionary *dictionary)
         NSString *keyOrAction = key;
         if (!keyOrAction && [dictionary[FXFormFieldAction] isKindOfClass:[NSString class]])
         {
-            keyOrAction = dictionary[FXFormFieldAction];
+          keyOrAction = dictionary[FXFormFieldAction];
         }
-        NSMutableString *output = [NSMutableString string];
+        NSMutableString *output = nil;
         if (keyOrAction)
         {
-            [output appendString:[[keyOrAction substringToIndex:1] uppercaseString]];
+            output = [NSMutableString stringWithString:[[keyOrAction substringToIndex:1] uppercaseString]];
             for (NSUInteger j = 1; j < [keyOrAction length]; j++)
             {
                 unichar character = [keyOrAction characterAtIndex:j];
@@ -832,12 +854,7 @@ static void FXFormPreprocessFieldDictionary(NSMutableDictionary *dictionary)
                 return [self.placeholder fieldDescription];
             }
         }
-        
-        //TODO: should we pass the results of these transforms to the
-        //valueTransformer afterwards? seems dangerous since
-        //the type won't match that of the options, and people
-        //probably won't be expecting it
-        
+      
         if ([self isCollectionType])
         {
             id value = self.value;
@@ -857,9 +874,17 @@ static void FXFormPreprocessFieldDictionary(NSMutableDictionary *dictionary)
                     }
                 }];
                 
-                return value = [options count]? options: nil;
+                value = [options count]? options: nil;
             }
-            
+            else if (value && self.valueTransformer)
+            {
+                NSMutableArray *options = [NSMutableArray array];
+                for (id option in value) {
+                  [options addObject:self.valueTransformer(option)];
+                }
+                value = [options count]? options: nil;
+            }
+          
             return [value fieldDescription] ?: [self.placeholder fieldDescription];
         }
         else if ([self.type isEqual:FXFormFieldTypeBitfield])
@@ -955,9 +980,9 @@ static void FXFormPreprocessFieldDictionary(NSMutableDictionary *dictionary)
         //use default value if available
         value = value ?: self.defaultValue;
         
-        if (self.reverseValueTransformer)
+        if (self.reverseValueTransformer && ![self isCollectionType] && !self.options)
         {
-            value = self.reverseValueTransformer;
+            value = self.reverseValueTransformer(value);
         }
         else if ([value isKindOfClass:[NSString class]])
         {
@@ -1102,7 +1127,7 @@ static void FXFormPreprocessFieldDictionary(NSMutableDictionary *dictionary)
 
 - (void)setOptions:(NSArray *)options
 {
-    _options = [options copy];
+    _options = [options count]? [options copy]: nil;
 }
 
 - (void)setTemplate:(NSDictionary *)template
@@ -1455,7 +1480,7 @@ static void FXFormPreprocessFieldDictionary(NSMutableDictionary *dictionary)
     //TODO: can we infer default template from existing values instead of having string fallback?
     NSMutableDictionary *field = [NSMutableDictionary dictionaryWithDictionary:self.field.fieldTemplate];
     FXFormPreprocessFieldDictionary(field);
-    field[FXFormFieldTitle] = field[FXFormFieldTitle] ?: @"";
+    field[FXFormFieldTitle] = @""; // title is used for the "Add Item" button, not each field
     return field;
 }
 
@@ -2152,6 +2177,15 @@ static void FXFormPreprocessFieldDictionary(NSMutableDictionary *dictionary)
         [section removeFieldAtIndex:indexPath.row];
         [tableView deleteRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationAutomatic];
         
+        // Reload the rows that follow. This is necessary to update the field references on the cells (otherwise the keys
+        // are invalid which can lead to a crash).
+        NSMutableArray *indexPaths = [NSMutableArray new];
+        for (NSInteger i = indexPath.row; i < [section.fields count]; ++i)
+        {
+            [indexPaths addObject:[NSIndexPath indexPathForRow:i + 1 inSection:indexPath.section]];
+        }
+        [tableView reloadRowsAtIndexPaths:indexPaths withRowAnimation:UITableViewRowAnimationAutomatic];
+        
         [tableView endUpdates];
     }
 }
@@ -2160,6 +2194,10 @@ static void FXFormPreprocessFieldDictionary(NSMutableDictionary *dictionary)
 {
     FXFormSection *section = [self sectionAtIndex:sourceIndexPath.section];
     [section moveFieldAtIndex:sourceIndexPath.row toIndex:destinationIndexPath.row];
+    
+    // Reload the table. This is necessary to update the field references on the cells (otherwise the keys
+    // are invalid which can lead to a crash).
+    [tableView reloadData];
 }
 
 - (NSIndexPath *)tableView:(__unused UITableView *)tableView targetIndexPathForMoveFromRowAtIndexPath:(NSIndexPath *)sourceIndexPath toProposedIndexPath:(NSIndexPath *)proposedDestinationIndexPath
@@ -2699,7 +2737,7 @@ static void FXFormPreprocessFieldDictionary(NSMutableDictionary *dictionary)
             [tableView deselectRowAtIndexPath:tableView.indexPathForSelectedRow animated:YES];
         }
     }
-    else if (self.field.action && (![self.field isSubform] || !self.field.optionCount))
+    else if (self.field.action && (![self.field isSubform] || !self.field.options))
     {
         //action takes precendence over segue or subform - you can implement these yourself in the action
         //the exception is for options fields, where the action will be called when the option is tapped
@@ -3436,7 +3474,6 @@ static void FXFormPreprocessFieldDictionary(NSMutableDictionary *dictionary)
         _imagePickerController = [[UIImagePickerController alloc] init];
         _imagePickerController.delegate = self;
         _imagePickerController.allowsEditing = YES;
-        [self setSourceType:UIImagePickerControllerSourceTypePhotoLibrary];
     }
     return _imagePickerController;
 }
@@ -3446,25 +3483,20 @@ static void FXFormPreprocessFieldDictionary(NSMutableDictionary *dictionary)
     return (UIImageView *)self.accessoryView;
 }
 
-- (BOOL)setSourceType:(UIImagePickerControllerSourceType)sourceType
-{
-    if ([UIImagePickerController isSourceTypeAvailable:sourceType])
-    {
-        self.imagePickerController.sourceType = sourceType;
-        return YES;
-    }
-    return NO;
-}
-
 - (void)didSelectWithTableView:(UITableView *)tableView controller:(UIViewController *)controller
 {
-    [self becomeFirstResponder];
+    [FXFormsFirstResponder(tableView) resignFirstResponder];
     [tableView deselectRowAtIndexPath:tableView.indexPathForSelectedRow animated:YES];
-    if ([UIAlertController class])
+    
+    if (!TARGET_IPHONE_SIMULATOR && ![UIImagePickerController isSourceTypeAvailable:UIImagePickerControllerSourceTypeCamera])
     {
-        UIAlertController *alert = [UIAlertController alertControllerWithTitle:nil
-                                                                       message:nil
-                                                                preferredStyle:UIAlertControllerStyleActionSheet];
+        self.imagePickerController.sourceType = UIImagePickerControllerSourceTypePhotoLibrary;
+        [controller presentViewController:self.imagePickerController animated:YES completion:nil];
+    }
+    else if ([UIAlertController class])
+    {
+        UIAlertControllerStyle style = (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad)? UIAlertControllerStyleAlert: UIAlertControllerStyleActionSheet;
+        UIAlertController *alert = [UIAlertController alertControllerWithTitle:nil message:nil preferredStyle:style];
         
         [alert addAction:[UIAlertAction actionWithTitle:NSLocalizedString(@"Take Photo", nil) style:UIAlertActionStyleDefault handler:^(__unused UIAlertAction *action) {
             [self actionSheet:nil didDismissWithButtonIndex:0];
@@ -3476,13 +3508,14 @@ static void FXFormPreprocessFieldDictionary(NSMutableDictionary *dictionary)
         
         [alert addAction:[UIAlertAction actionWithTitle:NSLocalizedString(@"Cancel", nil) style:UIAlertActionStyleCancel handler:NULL]];
         
+        self.controller = controller;
         [controller presentViewController:alert animated:YES completion:NULL];
     }
     else
     {
+        self.controller = controller;
         [[[UIActionSheet alloc] initWithTitle:nil delegate:self cancelButtonTitle:NSLocalizedString(@"Cancel", nil) destructiveButtonTitle:nil otherButtonTitles:NSLocalizedString(@"Take Photo", nil), NSLocalizedString(@"Photo Library", nil), nil] showInView:controller.view];
     }
-    self.controller = controller;
 }
 
 - (void)imagePickerControllerDidCancel:(UIImagePickerController *)picker
@@ -3500,24 +3533,28 @@ static void FXFormPreprocessFieldDictionary(NSMutableDictionary *dictionary)
 
 - (void)actionSheet:(__unused UIActionSheet *)actionSheet didDismissWithButtonIndex:(NSInteger)buttonIndex
 {
-    BOOL sourceTypeAvailable = NO;
+    UIImagePickerControllerSourceType sourceType = UIImagePickerControllerSourceTypePhotoLibrary;
     switch (buttonIndex)
     {
         case 0:
         {
-            sourceTypeAvailable = [self setSourceType:UIImagePickerControllerSourceTypeCamera];
+            sourceType = UIImagePickerControllerSourceTypeCamera;
             break;
         }
         case 1:
         {
-            sourceTypeAvailable = [self setSourceType:UIImagePickerControllerSourceTypePhotoLibrary];
+            sourceType = UIImagePickerControllerSourceTypePhotoLibrary;
             break;
         }
     }
-    if (sourceTypeAvailable)
+    
+    if ([UIImagePickerController isSourceTypeAvailable:sourceType])
     {
+        self.imagePickerController.sourceType = sourceType;
         [self.controller presentViewController:self.imagePickerController animated:YES completion:nil];
     }
+    
+    self.controller = nil;
 }
 
 @end
