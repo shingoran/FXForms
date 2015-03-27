@@ -2978,11 +2978,6 @@ static void FXFormPreprocessFieldDictionary(NSMutableDictionary *dictionary)
     return YES;
 }
 
-- (void)textFieldDidBeginEditing:(__unused UITextField *)textField
-{
-    [self.textField selectAll:nil];
-}
-
 - (void)textDidChange
 {
     [self updateFieldValue];
@@ -3166,11 +3161,6 @@ static void FXFormPreprocessFieldDictionary(NSMutableDictionary *dictionary)
         self.textView.autocapitalizationType = UITextAutocapitalizationTypeNone;
         self.textView.keyboardType = UIKeyboardTypeURL;
     }
-}
-
-- (void)textViewDidBeginEditing:(__unused UITextView *)textView
-{
-    [self.textView selectAll:nil];
 }
 
 - (void)textViewDidChange:(UITextView *)textView
