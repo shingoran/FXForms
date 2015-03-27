@@ -1401,6 +1401,11 @@ static void FXFormPreprocessFieldDictionary(NSMutableDictionary *dictionary)
                 }];
             }
         };
+        if (field.isInline)
+        {
+            action = field.action;
+        }
+        
         NSMutableArray *fields = [NSMutableArray array];
         if (field.placeholder)
         {
